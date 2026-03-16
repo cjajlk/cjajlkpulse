@@ -55,13 +55,33 @@ function handlePointerStart(e) {
     clientY = e.touches[0].clientY;
   }
 
-  const halfW = window.innerWidth / 2;
-  const halfH = window.innerHeight / 2;
+  // compute coordinates relative to the canvas element to handle offsets/scaling
+  const rect = canvasEl.getBoundingClientRect();
+  const relX = clientX - rect.left;
+  const relY = clientY - rect.top;
 
+  // split the canvas into three zones to directly choose a lane (top/middle/bottom or left/center/right)
   if (gameMode === "horizontal") {
-    if (clientY < halfH) moveLeft(); else moveRight();
+    const hThird = rect.height / 3;
+    let laneIndex = 1;
+    if (relY < hThird) laneIndex = 0;
+    else if (relY >= hThird * 2) laneIndex = 2;
+    // set directly to avoid multiple taps
+    if (player && typeof player.targetLane !== 'undefined') {
+      player.targetLane = laneIndex;
+      if(typeof soundMove === "function") soundMove();
+      if(typeof laneSwitchTimer !== "undefined") laneSwitchTimer = typeof PERFECT_WINDOW !== "undefined" ? PERFECT_WINDOW : 12;
+    }
   } else {
-    if (clientX < halfW) moveLeft(); else moveRight();
+    const wThird = rect.width / 3;
+    let laneIndex = 1;
+    if (relX < wThird) laneIndex = 0;
+    else if (relX >= wThird * 2) laneIndex = 2;
+    if (player && typeof player.targetLane !== 'undefined') {
+      player.targetLane = laneIndex;
+      if(typeof soundMove === "function") soundMove();
+      if(typeof laneSwitchTimer !== "undefined") laneSwitchTimer = typeof PERFECT_WINDOW !== "undefined" ? PERFECT_WINDOW : 12;
+    }
   }
 
   // Prevent default so taps don't trigger scrolling
