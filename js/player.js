@@ -3,7 +3,9 @@ class Player {
 constructor(x,y){
 this.x = x
 this.y = y
-this.radius = 12
+// radius scales with viewport but with sensible bounds so player is visible on mobile
+const minDim = Math.min(window.innerWidth || 360, window.innerHeight || 640);
+this.radius = Math.max(14, Math.round(minDim / 56));
 
 this.targetLane = 1
 this.lane = 1

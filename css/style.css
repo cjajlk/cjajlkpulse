@@ -37,6 +37,7 @@ display:block;
 	margin:20px;
 	text-align:center;
 	color:#e6dbff;
+	font-size:15px; /* slightly larger for readability on mobile */
 }
 
 #menu #menuSubtitle{
@@ -193,9 +194,16 @@ display:block;
 	.menuCard{ padding:18px; border-radius:12px; }
 	#profileBox{ margin:14px 0; font-size:13px; }
 	.menuButtons{ flex-direction:column; width:100%; }
-	.menuButtons button{ width:100%; font-size:16px; padding:14px; }
+	.menuButtons button{ width:100%; font-size:18px; padding:14px; }
 	.menuButtons button.secondary{ margin-top:8px; }
 	#menuFooter{ font-size:11px; bottom:6px; }
+}
+
+/* Tighter, more professional spacing for large screens */
+@media (min-width: 1024px){
+	.menuCard{ padding:36px 36px; }
+	#profileBox{ font-size:16px; }
+	.menuButtons button{ font-size:18px; padding:14px 32px; }
 }
 
 /* Desktop tweak: make menu card larger on wide viewports */

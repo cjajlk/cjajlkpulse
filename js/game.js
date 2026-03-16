@@ -1146,13 +1146,14 @@ function draw() {
   }
 
   // UI font sizes (responsive)
-  const uiSmall = isMobile ? '18px Arial' : '20px Arial';
-  const uiScoreFont = isMobile ? '24px Arial' : '30px Arial';
-  const uiComboFont = isMobile ? '20px Arial' : '28px Arial';
-  const floatingPerfectFont = isMobile ? 'bold 18px Arial' : 'bold 22px Arial';
-  const floatingNormalFont = isMobile ? 'bold 16px Arial' : 'bold 20px Arial';
-  const pulseShiftFont = isMobile ? '48px Arial' : '60px Arial';
-  const pulseStormFont = isMobile ? '28px Arial' : '48px Arial';
+  // make UI text slightly larger on mobile for readability
+  const uiSmall = isMobile ? '20px Arial' : '22px Arial';
+  const uiScoreFont = isMobile ? '30px Arial' : '36px Arial';
+  const uiComboFont = isMobile ? '24px Arial' : '32px Arial';
+  const floatingPerfectFont = isMobile ? 'bold 20px Arial' : 'bold 26px Arial';
+  const floatingNormalFont = isMobile ? 'bold 18px Arial' : 'bold 22px Arial';
+  const pulseShiftFont = isMobile ? '56px Arial' : '72px Arial';
+  const pulseStormFont = isMobile ? '36px Arial' : '56px Arial';
 
   // Flash near miss
   if (nearMissFlash > 0) {
