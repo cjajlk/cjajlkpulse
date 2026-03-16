@@ -46,6 +46,8 @@ document.addEventListener("keydown", (e) => {
 const canvasEl = document.getElementById("gameCanvas");
 function handlePointerStart(e) {
   // support touch events as well
+  // If game is over, tap should restart the run
+  try{ if (typeof gameOver !== 'undefined' && gameOver){ resetGame(); return; } }catch(err){}
   let clientX = e.clientX;
   let clientY = e.clientY;
   if (e.touches && e.touches[0]) {

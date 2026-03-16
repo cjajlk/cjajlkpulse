@@ -356,12 +356,11 @@ const ctx = canvas.getContext("2d");
 // Responsive canvas + mobile detection
 let isMobile = window.innerWidth < 768;
 function resizeCanvas() {
-  // use devicePixelRatio but cap it to avoid excessive resolution on mobile
-  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  // use CSS pixels for canvas coordinate system to keep input and game logic consistent
   canvas.style.width = window.innerWidth + 'px';
   canvas.style.height = window.innerHeight + 'px';
-  canvas.width = Math.floor(window.innerWidth * dpr);
-  canvas.height = Math.floor(window.innerHeight * dpr);
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
   isMobile = window.innerWidth < 768;
 
   // heuristique simple pour détecter appareils faibles
