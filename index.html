@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CJajlkPulse</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- Main menu overlay (NOCTURNE RUNNER) -->
+<div id="menu">
+	<div class="menuCard">
+		<!-- Moon for welcome ambience -->
+		<img id="moon" src="assets/moon.png" alt="moon" style="width:86px;height:auto;margin-bottom:10px;opacity:0.95;" />
+		<h1>NOCTURNE RUNNER</h1>
+		<p id="menuSubtitle">Stay in the lane. Survive the pulse.</p>
+
+		<div id="profileBox">
+			<p>Level : <span id="playerLevel">1</span></p>
+			<div class="xpRow">
+			  <div class="xpLabel">XP :</div>
+			  <div class="xpBar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+				<div id="xpBarFill" class="xpBarFill" style="width:0%"></div>
+			  </div>
+			  <div class="xpText"> <span id="playerXP">0</span> / <span id="playerXPMax">100</span></div>
+			</div>
+			<p>Best Score : <span id="bestScore">0</span></p>
+			<p>Best Distance : <span id="bestDistance">0</span></p>
+			<p>Best Combo : <span id="bestCombo">0</span></p>
+			<p>Total Runs : <span id="runs">0</span></p>
+			<div id="menuSkinBox" style="margin-top:8px;display:flex;align-items:center;gap:10px;justify-content:center;">
+				<div id="menuSkinPreview" style="width:44px;height:44px;border-radius:50%;box-shadow:0 8px 20px rgba(0,0,0,0.5);background:#9b6cff;border:2px solid rgba(255,255,255,0.04);"></div>
+				<div style="color:#d6c9ff;font-size:13px;">Apparence : <span id="menuSkinName">Nocturne</span></div>
+			</div>
+			<div style="margin-top:8px;color:#d6c9ff;font-size:13px;">Diamants : <span id="menuDiamonds">0</span> ♦</div>
+		</div>
+
+		<div class="menuButtons" style="display:flex;gap:12px;align-items:center;margin-top:18px">
+			<button id="startBtn">▶ START RUN</button>
+			<button id="shopBtn" class="secondary">🛒 BOUTIQUE</button>
+			<button id="optionsBtn" class="secondary">⚙ OPTIONS</button>
+		</div>
+
+		<div class="menuHint">Press Enter or ▶ to start</div>
+	</div>
+
+	<!-- Shop modal -->
+	<div id="shopModal" style="display:none;">
+		<div class="modalContent shopContent">
+			<h2>Boutique</h2>
+			<p style="color:#d6c9ff;margin-top:6px;">Choisis ton apparence de joueur</p>
+			<div id="shopGrid" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;width:100%;">
+				<!-- skin cards rendered here -->
+			</div>
+			<div style="width:100%;display:flex;gap:10px;justify-content:flex-end;margin-top:14px;">
+				<button id="shopCloseBtn">Fermer</button>
+				<button id="shopSaveBtn" class="primary">Enregistrer</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Purchase unlocked modal -->
+	<div id="purchaseModal" style="display:none;">
+		<div class="modalContent">
+			<h2 id="purchaseTitle">Achat débloqué</h2>
+			<p id="purchaseText">Vous avez débloqué un nouvel élément.</p>
+			<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px;width:100%">
+				<button id="purchaseKeepBtn">Garder</button>
+				<button id="purchaseEquipBtn" class="primary">Équiper</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="menuFooter">tout droit reserves cjajlkgames 2026</div>
+</div>
+
+<script src="js/player.js"></script>
+<script src="js/obstacle.js"></script>
+<script src="js/bonus.js"></script>
+<script src="js/cjplayer.js"></script>
+<script src="js/game.js"></script>
+
+<!-- Menu logic: charge le profil depuis l'engine et lance la partie -->
+<script>
+	function loadMenuProfile(){
+			let p = {};
+			let prof = null;
+			if (typeof initProfile === 'function'){
+				try{ prof = initProfile() || null; }catch(e){ prof = null; }
+			} else if (typeof loadProfile === 'function'){
+				try{ prof = loadProfile() || null; }catch(e){ prof = null; }
+			}
+
+			// runner stats
+			if (prof && prof.progression && prof.progression.runner) p = prof.progression.runner; else if (typeof getRunnerProfile === 'function') p = getRunnerProfile() || {};
+			document.getElementById('bestScore').textContent = p.bestScore || 0;
+			document.getElementById('bestDistance').textContent = p.bestDistance || 0;
+			document.getElementById('bestCombo').textContent = p.bestCombo || 0;
+			document.getElementById('runs').textContent = p.runs || 0;
+
+			// player stats
+			const player = (prof && prof.player) ? prof.player : { level:1, xp:0 };
+			// apply skin preview
+			const skinMap = { default: ['Nocturne','#9b6cff'], red: ['Rouge','#ff6b6b'], blue: ['Bleu','#4cc9f0'], yellow: ['Soleil','#ffd166'] };
+			const skinKey = (player && player.skin) ? player.skin : (window.playerSkin || 'default');
+			window.playerSkin = skinKey;
+			const skinPreview = document.getElementById('menuSkinPreview');
+			const skinNameEl = document.getElementById('menuSkinName');
+			if(skinPreview){ skinPreview.style.background = (skinMap[skinKey] ? skinMap[skinKey][1] : '#9b6cff'); }
+			if(skinNameEl){ skinNameEl.textContent = (skinMap[skinKey] ? skinMap[skinKey][0] : 'Nocturne'); }
+			// update diamonds display
+			try{
+				const diamondsEl = document.getElementById('menuDiamonds');
+				const diamonds = (prof && prof.inventory && typeof prof.inventory.diamonds === 'number') ? prof.inventory.diamonds : 0;
+				if(diamondsEl) diamondsEl.textContent = diamonds;
+			}catch(e){}
+			const lvl = player.level || 1;
+			const xp = player.xp || 0;
+			const xpToLevel = lvl * 100;
+			const lvlEl = document.getElementById('playerLevel');
+			const xpEl = document.getElementById('playerXP');
+			const xpMaxEl = document.getElementById('playerXPMax');
+			const xpBarFill = document.getElementById('xpBarFill');
+			if (lvlEl) lvlEl.textContent = lvl;
+			if (xpEl) xpEl.textContent = xp;
+			if (xpMaxEl) xpMaxEl.textContent = xpToLevel;
+
+			// smooth fill + sparkles when level was increased since last check
+			const percent = xpToLevel > 0 ? Math.max(0, Math.min(1, xp / xpToLevel)) : 0;
+			const prevLevel = window._lastPlayerLevel || lvl;
+			const prevPercent = (typeof window._lastXPPercent === 'number') ? window._lastXPPercent : percent;
+
+			if (xpBarFill){
+				// if leveled up since last render -> animate full bar then set to leftover percent
+				if (lvl > prevLevel){
+					// animate to 100%
+					xpBarFill.style.transition = 'width 600ms cubic-bezier(.2,.9,.2,1)';
+					xpBarFill.style.width = '100%';
+					// create sparkles
+					spawnXPStars();
+					// after animation, set to actual leftover percent
+					setTimeout(()=>{
+						xpBarFill.style.transition = 'width 400ms ease-out';
+						xpBarFill.style.width = Math.round(percent*100) + '%';
+					}, 650);
+					// pop the level number
+					if (lvlEl){ lvlEl.classList.add('levelPop'); setTimeout(()=> lvlEl.classList.remove('levelPop'), 900); }
+				} else {
+					// normal smooth update
+					xpBarFill.style.transition = 'width 450ms ease-out';
+					xpBarFill.style.width = Math.round(percent*100) + '%';
+				}
+			}
+
+			// save last values
+			window._lastPlayerLevel = lvl;
+			window._lastXPPercent = percent;
+	}
+
+	document.addEventListener('DOMContentLoaded', ()=>{
+		loadMenuProfile();
+
+		// show welcome on first run (one-time)
+		try{
+			if(localStorage.getItem && localStorage.getItem('CJ_FIRST_RUN') === 'true'){
+				showWelcome();
+				localStorage.removeItem('CJ_FIRST_RUN');
+			}
+		}catch(e){}
+
+		const menu = document.getElementById('menu');
+		const startBtn = document.getElementById('startBtn');
+		if(startBtn){
+			startBtn.addEventListener('click', ()=>{
+				menu.style.display = 'none';
+				if (typeof startGame === 'function') startGame();
+			});
+		}
+
+		// allow Enter to start
+		document.addEventListener('keydown', e=>{
+			if(e.key === 'Enter'){
+				if(menu.style.display !== 'none'){
+					menu.style.display = 'none';
+					if (typeof startGame === 'function') startGame();
+				}
+			}
+		});
+	});
+</script>
+
+<script>
+// spawn small sparkles inside the xp bar
+function spawnXPStars(){
+	const bar = document.querySelector('.xpBar');
+	if(!bar) return;
+	for(let i=0;i<10;i++){
+		const s = document.createElement('span');
+		s.className = 'xpSpark';
+		const left = 10 + Math.random()*80;
+		s.style.left = left + '%';
+		s.style.top = (30 + Math.random()*10) + '%';
+		bar.appendChild(s);
+		// remove after animation
+		setTimeout(()=>{ s.remove(); }, 900 + Math.random()*300);
+	}
+}
+</script>
+
+<script>
+// affiche un petit badge indiquant que le profil a été sauvegardé localement
+function showLocalSaveNotice(text){
+	try{
+		const card = document.querySelector('.menuCard');
+		if(!card) return;
+		// si déjà présent, réinitialise le timer
+		let note = document.getElementById('localSaveNotice');
+		if(!note){
+			note = document.createElement('div');
+			note.id = 'localSaveNotice';
+			note.style.position = 'absolute';
+			note.style.top = '12px';
+			note.style.right = '12px';
+			note.style.padding = '6px 10px';
+			note.style.background = 'rgba(0,0,0,0.6)';
+			note.style.color = '#fff';
+			note.style.borderRadius = '6px';
+			note.style.fontSize = '13px';
+			note.style.boxShadow = '0 4px 14px rgba(0,0,0,0.4)';
+			note.style.opacity = '0';
+			note.style.transition = 'opacity 260ms ease';
+			card.style.position = 'relative';
+			card.appendChild(note);
+		}
+		note.textContent = text || 'Profil sauvegardé localement';
+		note.style.opacity = '1';
+		clearTimeout(note._t);
+		note._t = setTimeout(()=>{ note.style.opacity = '0'; }, 1800);
+	}catch(e){}
+}
+
+// show welcome message once on first run
+function showWelcome(){
+	const div = document.createElement('div');
+	div.id = 'welcomeMessage';
+	div.innerHTML = `
+		<div class="welcomeInner">✨ Bienvenue dans l'univers Nocturne<br><span class="welcomeSub">Que la lumière te guide...</span></div>
+	`;
+	document.body.appendChild(div);
+	// start moon pulse if moon exists
+	try{
+		const moon = document.getElementById('moon');
+		if(moon){
+			moon.classList.add('moonPulse');
+		}
+		// small crystalline sound
+		if (typeof playSound === 'function') playSound(600, 0.4, 'sine', 0.22);
+	}catch(e){}
+	// fade out after a delay
+	setTimeout(()=>{ div.classList.add('fadeOut'); }, 3500);
+	setTimeout(()=>{ div.remove(); }, 5200);
+	// stop moon after message removed
+	setTimeout(()=>{ try{ const moon = document.getElementById('moon'); if(moon) moon.classList.remove('moonPulse'); }catch(e){} }, 5200);
+}
+</script>
+
+	<!-- Options modal -->
+	<div id="optionsModal" style="display:none;">
+		<div class="modalContent">
+			<h2>Options</h2>
+			<div style="margin-top:10px;display:flex;gap:8px;flex-direction:column;width:100%">
+				<button id="resetBestsBtn" class="danger">Reset bests</button>
+				<button id="resetAllBtn" class="danger secondary">Reset entire profile</button>
+			</div>
+			<div style="margin-top:14px;text-align:center">
+				<button id="closeOptionsBtn">Close</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+	function showConfirm(title, text){
+		return new Promise(resolve=>{
+			const m = document.getElementById('confirmModal');
+			const t = document.getElementById('confirmText');
+			const h = document.getElementById('confirmTitle');
+			const ok = document.getElementById('confirmOk');
+			const cancel = document.getElementById('confirmCancel');
+			m.style.display = 'flex';
+			h.textContent = title || 'Confirm';
+			t.textContent = text || '';
+			function cleanup(){
+				m.style.display = 'none';
+				ok.removeEventListener('click', onOk);
+				cancel.removeEventListener('click', onCancel);
+				m.removeEventListener('click', onOverlay);
+			}
+			function onOk(){ cleanup(); resolve(true); }
+			function onCancel(){ cleanup(); resolve(false); }
+			function onOverlay(e){ if(e.target === m){ cleanup(); resolve(false); } }
+			ok.addEventListener('click', onOk);
+			cancel.addEventListener('click', onCancel);
+			m.addEventListener('click', onOverlay);
+		});
+	}
+		document.addEventListener('DOMContentLoaded', ()=>{
+			const optionsBtn = document.getElementById('optionsBtn');
+			const optionsModal = document.getElementById('optionsModal');
+			const closeOptionsBtn = document.getElementById('closeOptionsBtn');
+			const resetBestsBtn = document.getElementById('resetBestsBtn');
+			const resetAllBtn = document.getElementById('resetAllBtn');
+
+			if(optionsBtn && optionsModal){
+				optionsBtn.addEventListener('click', ()=>{ optionsModal.style.display = 'flex'; });
+				closeOptionsBtn && closeOptionsBtn.addEventListener('click', ()=>{ optionsModal.style.display = 'none'; });
+
+				// click outside to close
+				optionsModal.addEventListener('click', (e)=>{ if(e.target === optionsModal) optionsModal.style.display = 'none'; });
+
+				resetBestsBtn && resetBestsBtn.addEventListener('click', ()=>{
+					(async ()=>{
+						const ok = await showConfirm('Reset bests', 'This will reset best scores and runs. Continue?');
+						if(!ok) return;
+						try{
+							let profile = (typeof initProfile === 'function') ? initProfile() : (typeof getRunnerProfile === 'function' ? { progression: { runner: getRunnerProfile() } } : null);
+							if(!profile) profile = createDefaultProfile ? createDefaultProfile() : { progression: { runner: { bestScore:0,bestDistance:0,bestCombo:0,runs:0 } } };
+							profile.progression = profile.progression || {};
+							profile.progression.runner = profile.progression.runner || { bestScore:0,bestDistance:0,bestCombo:0,runs:0 };
+							profile.progression.runner.bestScore = 0;
+							profile.progression.runner.bestDistance = 0;
+							profile.progression.runner.bestCombo = 0;
+							profile.progression.runner.runs = 0;
+							if(typeof saveProfile === 'function') saveProfile(profile);
+							// sync to engine state if present
+							if(typeof updateState === 'function'){
+								try{ updateState(state => { state.progression = state.progression || {}; state.progression.runner = profile.progression.runner; }); if(typeof saveProfile === 'function') saveProfile(); }catch(e){}
+							}
+						}catch(e){}
+						// refresh menu and close
+						try{ if(typeof loadMenuProfile === 'function') loadMenuProfile(); }catch(e){}
+						optionsModal.style.display = 'none';
+					})();
+				});
+
+				resetAllBtn && resetAllBtn.addEventListener('click', ()=>{
+					(async ()=>{
+						const ok = await showConfirm('Reset entire profile', 'This will erase your profile and replace it with defaults. Continue?');
+						if(!ok) return;
+						try{
+							const profile = (typeof createDefaultProfile === 'function') ? createDefaultProfile() : { player:{name:'CJ Player',level:1,xp:0}, progression:{ runner:{bestScore:0,bestDistance:0,bestCombo:0,runs:0} }, inventory:{diamonds:0,skins:[]} };
+							if(typeof saveProfile === 'function') saveProfile(profile);
+							if(typeof updateState === 'function'){
+								try{ updateState(state => { state.progression = state.progression || {}; state.progression.runner = profile.progression.runner; }); if(typeof saveProfile === 'function') saveProfile(); }catch(e){}
+							}
+						}catch(e){}
+						try{ if(typeof loadMenuProfile === 'function') loadMenuProfile(); }catch(e){}
+						optionsModal.style.display = 'none';
+					})();
+				});
+			}
+		});
+	</script>
+
+		<!-- Confirm modal (reusable) -->
+		<div id="confirmModal" style="display:none;">
+			<div class="confirmContent">
+				<h3 id="confirmTitle">Confirm</h3>
+				<p id="confirmText">Are you sure?</p>
+				<div style="display:flex;gap:10px;margin-top:12px;width:100%;justify-content:flex-end;">
+					<button id="confirmCancel">Cancel</button>
+					<button id="confirmOk" class="danger">Confirm</button>
+				</div>
+			</div>
+		</div>
+
+	<script src="js/main.js"></script>
+	<script src="js/shop.js"></script>
+
+</body>
+</html>
