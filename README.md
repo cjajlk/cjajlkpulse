@@ -49,5 +49,7 @@ python -m http.server 8000
 ## Licence
 Code sans licence explicite — demander à l'auteur pour autorisations d'utilisation ou partage.
 
+Ce projet est distribué sous une licence propriétaire personnalisée par CJajlkgames. Voir le fichier `LICENSE` à la racine du dépôt pour le texte complet des conditions (droits d'utilisation, restrictions commerciales et contact pour licences commerciales).
+
 ---
 Fichier généré automatiquement — besoin d'un README plus détaillé ou d'EXEMPLE de build ? Dis-moi ce que tu veux ajouter.
